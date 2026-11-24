@@ -32,7 +32,7 @@ let renderShader = """
     fragment half4 side_by_side(Varyings in [[stage_in]],
                                 texture2d<half> camera [[texture(0)]],
                                 texture2d<float> inverseDepth [[texture(1)]],
-                                constant float3& scaleNearFar [[buffer(0)]]) {
+                                constant float4& scaleNearFar [[buffer(0)]]) {  // w: --cutoff in meters, 0 without
         constexpr sampler s(filter::linear, address::clamp_to_edge);
         float2 uv = float2(fract(in.uv.x * 2.0), in.uv.y);
         if (abs(in.uv.x - 0.5) < fwidth(in.uv.x)) return half4(0.0h, 0.0h, 0.0h, 1.0h);
@@ -41,6 +41,12 @@ let renderShader = """
             color = camera.sample(s, uv);
         } else {
             float meters = scaleNearFar.x / max(inverseDepth.sample(s, uv).r, 1e-6);
+            if (scaleNearFar.w > 0.0) {
+                // The camera in front of the cutoff, chroma green behind it, blended over a 10% band.
+                // ponytail: one depth threshold, so anything else that near (a desk, a hand-held cup) stays too.
+                half keep = half(1.0 - smoothstep(0.95 * scaleNearFar.w, 1.05 * scaleNearFar.w, meters));
+                return half4(mix(half3(0.0h, 1.0h, 0.0h), camera.sample(s, uv).rgb, keep), 1.0h);
+            }
             float t = 1.0 - saturate(log(meters / scaleNearFar.y) / log(scaleNearFar.z / scaleNearFar.y));
             color = half4(half3(turbo(t)), 1.0h);
         }
@@ -56,8 +62,11 @@ final class Renderer: NSObject, MTKViewDelegate {
     private let worker: Worker
     private let metrics: Metrics
     private var lastSeq = -1
+    /// `--cutoff` in meters; 0 shows the depth map.
+    var cutoff: Float
 
-    init(gpu: GPU, view: MTKView, worker: Worker, metrics: Metrics) throws {
+    init(gpu: GPU, view: MTKView, worker: Worker, metrics: Metrics, cutoff: Double?) throws {
+        self.cutoff = Float(cutoff ?? 0)
         self.gpu = gpu
         self.worker = worker
         self.metrics = metrics
@@ -81,11 +90,11 @@ final class Renderer: NSObject, MTKViewDelegate {
             return
         }
         lastSeq = slot.times.seq
-        var scaleNearFar = SIMD3(slot.metricScale, slot.depthRange.x, slot.depthRange.y)
+        var scaleNearFar = SIMD4(slot.metricScale, slot.depthRange.x, slot.depthRange.y, cutoff)
         encoder.setRenderPipelineState(pipeline)
         encoder.setFragmentTexture(slot.camera, index: 0)
         encoder.setFragmentTexture(slot.inverseDepthTexture, index: 1)
-        encoder.setFragmentBytes(&scaleNearFar, length: MemoryLayout<SIMD3<Float>>.size, index: 0)
+        encoder.setFragmentBytes(&scaleNearFar, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         encoder.endEncoding()
 

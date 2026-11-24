@@ -12,6 +12,25 @@ Depth Pro 2 estimates the depth of every pixel, in meters, from images taken wit
 
 This repository contains the code to run the models and links to their weights. It does not include training or evaluation code.
 
+## This fork: cut yourself out of the background
+
+This is a fork of [apple-aiml-research/ml-depth-pro-2](https://github.com/apple-aiml-research/ml-depth-pro-2), not an Apple project. It adds one option to the [Mac demo](#mac-demo), `--cutoff METERS`. With it, the demo's right pane shows the camera picture of everything nearer than that distance, with solid green behind it, in place of the depth map, so that a chroma key can swap the background.
+
+```bash
+uv run --extra coreml python -m demo.export stream -m depthpro2-s -s 360x640 -w 4
+uv run --extra coreml python -m demo.export fov
+./demo/run.sh depthpro2-s_360x640_w4.mlpackage --cutoff 1.0
+```
+
+- Press `[` and `]` in the window to move the cutoff by 10%; the terminal prints the new distance. Press q to quit.
+- The second command exports the field-of-view estimator. A camera that reports no focal length, such as the built-in camera of an M1 Max MacBook Pro, needs it (or `--focal-px`): without one, the demo shows 0 fps.
+- 640x360 is the size an M1 Max MacBook Pro runs in real time: about 27 frames per second on the live camera with the S model. At the demo's default, 854x480, the model alone reaches about 14.
+- The cut is one distance threshold. Anything else nearer than the cutoff, such as the edge of a desk, stays in the picture, and loose strands of hair can be lost.
+- The estimated focal length varies a little from launch to launch, and all distances move with it, so expect to adjust the cutoff after starting.
+- The window keeps the demo's overlays: the focal length label sits in the green pane.
+
+The change is in `demo/apple/Sources/demo` (`Render.swift`, `Options.swift` and `LiveApp.swift`). Everything else is as upstream.
+
 ## Getting started
 
 On Linux or an Apple silicon Mac, install [uv](https://docs.astral.sh/uv/), clone this repository, and run:

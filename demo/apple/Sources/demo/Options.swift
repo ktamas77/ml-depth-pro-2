@@ -19,6 +19,7 @@ struct Options {
           --focal-px PIXELS    focal length in pixels, for a camera that reports none
           --min-depth METERS   near end of the color bar
           --max-depth METERS   far end of the color bar
+          --cutoff METERS      instead of the depth map, show the camera nearer than this on green, to key out; [ and ] move it
         """
 
     let package: URL
@@ -28,8 +29,10 @@ struct Options {
     let focalPixels: Double?
     let minDepth: Double?
     let maxDepth: Double?
+    let cutoff: Double?
 
     init(arguments: [String]) throws {
+        var cutoff: Double?
         var package: URL?
         var function: String?
         var computeUnits = ComputeUnits.gpu
@@ -56,6 +59,7 @@ struct Options {
             case "--focal-px": focalPixels = try Self.number(after: argument, in: &rest)
             case "--min-depth": minDepth = try Self.number(after: argument, in: &rest)
             case "--max-depth": maxDepth = try Self.number(after: argument, in: &rest)
+            case "--cutoff": cutoff = try Self.number(after: argument, in: &rest)
             default:
                 guard !argument.hasPrefix("-"), package == nil else { throw DemoError(Self.usage) }
                 package = URL(fileURLWithPath: argument)
@@ -70,6 +74,7 @@ struct Options {
         }
         (self.package, self.function, self.computeUnits) = (package, function, computeUnits)
         (self.focalPixels, self.minDepth, self.maxDepth) = (focalPixels, minDepth, maxDepth)
+        self.cutoff = cutoff
     }
 
     private static func number(after option: String, in rest: inout ArraySlice<String>) throws -> Double {

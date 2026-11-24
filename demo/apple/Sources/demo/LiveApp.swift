@@ -68,7 +68,7 @@ final class LiveApp: NSObject, NSApplicationDelegate {
         view.colorPixelFormat = .bgra8Unorm
         view.isPaused = true
         view.enableSetNeedsDisplay = false
-        renderer = try Renderer(gpu: gpu, view: view, worker: worker, metrics: metrics)
+        renderer = try Renderer(gpu: gpu, view: view, worker: worker, metrics: metrics, cutoff: options.cutoff)
         view.delegate = renderer
 
         for pill in [statsPill, focalPill, statusPill, colorBar, picker, resolutionPicker] as [NSView] {
@@ -270,6 +270,9 @@ final class LiveApp: NSObject, NSApplicationDelegate {
             fieldOfView.forget(device.uniqueID)
             worker.recalibrate()
         case "q": NSApp.terminate(nil)
+        case let key where (key == "[" || key == "]") && renderer.cutoff > 0:
+            renderer.cutoff *= key == "]" ? 1.1 : 1 / 1.1
+            note(String(format: "cutoff %.2f m", renderer.cutoff))
         default: break
         }
     }
@@ -278,7 +281,7 @@ final class LiveApp: NSObject, NSApplicationDelegate {
         let current = worker.currentStatus()
         showStats(metrics.snapshot())
         showFocal(of: current)
-        colorBar.show(current.depthRange)
+        colorBar.show(renderer.cutoff > 0 ? nil : current.depthRange)
         showStatus(of: current)
         announceStart(of: current)
     }
@@ -300,6 +303,7 @@ final class LiveApp: NSObject, NSApplicationDelegate {
         let keys = [
             fixedColors ? nil : "c to recalibrate the color bar",
             fieldOfView == nil ? nil : "f to re-estimate the focal length",
+            options.cutoff == nil ? nil : "[ and ] to move the cutoff",
             "q to quit",
         ]
         note(keys.compactMap { $0 }.joined(separator: ", "))

@@ -46,6 +46,7 @@ The app tells you when it holds more than half of the Mac's memory.
 ```
 ./demo/run.sh PACKAGE [--resolution WxH] [--compute-units gpu|ane]
                       [--focal-px PIXELS] [--min-depth METERS] [--max-depth METERS]
+                      [--cutoff METERS]
 ```
 
 - For a package with several sizes, the window's menu lists them, read from the package itself, and
@@ -64,6 +65,9 @@ The app tells you when it holds more than half of the Mac's memory.
 - The color bar fits the scene's depth range when a camera starts; press c to fit it again, or
   fix it with `--min-depth` and `--max-depth`.
 - Press f to estimate the focal length again, when the field-of-view package is next to the model.
+- `--cutoff` replaces the depth map with the camera picture of everything nearer than that distance,
+  on green, for a chroma key to swap the background. Press [ and ] to move the cutoff by 10%; the
+  terminal prints the new distance.
 
 ## Use the exported model in your own app
 
