@@ -27,7 +27,11 @@ uv run --extra coreml python -m demo.export fov
 - 640x360 is the size an M1 Max MacBook Pro runs in real time: about 27 frames per second on the live camera with the S model. At the demo's default, 854x480, the model alone reaches about 14.
 - The cut is one distance threshold. Anything else nearer than the cutoff, such as the edge of a desk, stays in the picture, and loose strands of hair can be lost.
 - The estimated focal length varies a little from launch to launch, and all distances move with it, so expect to adjust the cutoff after starting.
-- The window keeps the demo's overlays: the focal length label sits in the green pane.
+- The right pane carries no labels, so a window capture of it can be keyed as it is. The picture in it has the model's size, 640x360 here, not the camera's.
+
+To use it in OBS, leave the demo running and add a macOS Screen Capture source set to capture the "Depth Pro 2 demo" window. Crop the source to the right pane (hold Option and drag its left and top edges), then add a Chroma Key filter with the key color green.
+
+For filters that run inside OBS itself, with no demo window to capture, see [Depth Background Removal](https://github.com/ktamas77/depth-background-removal) and [Depth RGB Trails](https://github.com/ktamas77/depth-rgb-trails), two plugins built on the same model.
 
 The change is in `demo/apple/Sources/demo` (`Render.swift`, `Options.swift` and `LiveApp.swift`). Everything else is as upstream.
 

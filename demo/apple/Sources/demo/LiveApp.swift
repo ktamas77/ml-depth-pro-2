@@ -82,7 +82,9 @@ final class LiveApp: NSObject, NSApplicationDelegate {
             depthHalf.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             statsPill.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: inset),
             statsPill.topAnchor.constraint(equalTo: view.topAnchor, constant: inset),
-            focalPill.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -inset),
+            // With --cutoff the right pane stays clear of labels, for a window capture to key out.
+            focalPill.trailingAnchor.constraint(
+                equalTo: options.cutoff == nil ? view.trailingAnchor : view.centerXAnchor, constant: -inset),
             focalPill.topAnchor.constraint(equalTo: view.topAnchor, constant: inset),
             statusPill.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             statusPill.topAnchor.constraint(equalTo: view.topAnchor, constant: inset),
